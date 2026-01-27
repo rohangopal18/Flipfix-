@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FlipFix - Puzzle Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- SEO Meta -->
+<meta name="description" content="FlipFix is a fun memory puzzle game. Match fruit cards and test your brain speed.">
+<meta name="keywords" content="memory game, puzzle game, flip cards, brain game">
+<meta name="author" content="Rohan">
+
+<link rel="icon" href="" type="image/svg+xml">
+
+<!-- Google AdSense Script -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+     crossorigin="anonymous"></script>
+
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(to bottom right, #f5f5f7, #e0e0e5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    transition: background 0.5s ease;
+  }
+  body.dark {
+    background: linear-gradient(to bottom right, #1c1c1e, #2c2c2e);
+    color: #f5f5f7;
+  }
+
+  .container {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 30px;
+    text-align: center;
+    width: 420px;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+  body.dark .container {
+    background: #2c2c2e;
+    color: #f5f5f7;
+  }
+
+  h1 { margin-bottom: 15px; }
+
+  .description {
+    font-size: 1.05em;
+    color: #555;
+    margin-bottom: 25px;
+  }
+  body.dark .description { color: #ccc; }
+
+  button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 12px;
+    background: #007aff;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  button:hover { background:#005ecb; }
+
+  .theme-toggle {
+    margin-top: 15px;
+    font-size: 0.9em;
+    cursor: pointer;
+    color: #007aff;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .card {
+    background: #f0f0f3;
+    border-radius: 12px;
+    height: 80px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:2em;
+    color: transparent;
+    cursor:pointer;
+    transition:0.3s;
+  }
+  .card.flipped {
+    background:#fff;
+    color:#333;
+  }
+  .card.matched {
+    background:#d1f5d3;
+    color:#2e7d32;
+    cursor:default;
+  }
+
+  .status, .scoreboard, .timer {
+    margin-top: 10px;
+    font-size: 0.95em;
+  }
+
+  .timer { color:#007aff; }
+
+  footer {
+    position: fixed;
+    bottom:0;
+    width:100%;
+    text-align:center;
+    padding:8px;
+    font-size:0.85em;
+    color:#888;
+    background:#f5f5f7;
+    border-top:1px solid #ddd;
+  }
+  body.dark footer {
+    background:#1c1c1e;
+    border-top:1px solid #444;
+    color:#aaa;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== WELCOME SCREEN ========== -->
+<div class="container" id="welcomeScreen">
+  <h1>🍎 FlipFix</h1>
+  <div class="description">
+    Test your memory and speed!  
+    Flip cards to match fruit pairs in this sleek puzzle game.
+  </div>
+<p style="font-size:0.9em;color:#666;margin-top:10px;">
+FlipFix is a free browser-based memory puzzle game designed to improve concentration and recall. 
+Play directly in your browser without downloads.
+</p>
+
+  <!-- AdSense Ad -->
+  <ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+     data-ad-slot="1234567890"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+  <script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+
+  <button onclick="showGame()">Play Now</button>
+  <div class="theme-toggle" onclick="toggleTheme()">Toggle Theme</div>
+</div>
+
+<!-- ========== GAME SCREEN ========== -->
+<div class="container" id="gameScreen" style="display:none;">
+  <h1>🍎🍊🍇 FlipFix 🍍🥝🍉</h1>
+  <div class="description">
+    Flip two cards to find matching fruit pairs. Match all to win!
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="status" id="status">Find all pairs!</div>
+  <div class="scoreboard" id="scoreboard">Moves: 0 | Matches: 0</div>
+  <div class="timer" id="timer">Time: 0s</div>
+
+  <button onclick="startGame()">Restart</button>
+  <div class="theme-toggle" onclick="toggleTheme()">Toggle Theme</div>
+</div>
+
+<footer>
+FlipFix ©2026 | <a href="privacy.html">Privacy Policy</a>
+</footer>
+
+<script>
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+  }
+
+  function showGame(){
+    document.getElementById("welcomeScreen").style.display="none";
+    document.getElementById("gameScreen").style.display="block";
+    startGame();
+  }
+
+  const grid = document.getElementById("grid");
+  const statusText = document.getElementById("status");
+  const scoreboard = document.getElementById("scoreboard");
+  const timerDisplay = document.getElementById("timer");
+
+  let cards=[], flipped=[], matchedCount=0, moves=0, timer=0, timerInterval;
+
+  const flipSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+  const matchSound = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+  const winSound = new Audio("https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg");
+
+  function startGame() {
+    const symbols = ["🍎","🍊","🍇","🍓","🍒","🍍","🥝","🍉"];
+    cards = [...symbols,...symbols].sort(()=>Math.random()-0.5).map(s=>({symbol:s,matched:false}));
+
+    grid.innerHTML="";
+    flipped=[];
+    matchedCount=0;
+    moves=0;
+    timer=0;
+    clearInterval(timerInterval);
+    timerInterval=setInterval(updateTimer,1000);
+
+    statusText.textContent="Find all pairs!";
+    updateScoreboard();
+
+    cards.forEach((card,index)=>{
+      const div=document.createElement("div");
+      div.className="card";
+      div.dataset.index=index;
+      div.textContent=card.symbol;
+      div.addEventListener("click",flipCard);
+      grid.appendChild(div);
+    });
+  }
+
+  function flipCard(e){
+    const cardDiv=e.target;
+    const index=cardDiv.dataset.index;
+    const card=cards[index];
+
+    if(card.matched || cardDiv.classList.contains("flipped")) return;
+    if(flipped.length===2) return;
+
+    cardDiv.classList.add("flipped");
+    flipSound.play();
+    flipped.push({index,cardDiv});
+
+    if(flipped.length===2){
+      moves++;
+      updateScoreboard();
+      const [first,second]=flipped;
+
+      if(cards[first.index].symbol===cards[second.index].symbol){
+        cards[first.index].matched=true;
+        cards[second.index].matched=true;
+        first.cardDiv.classList.add("matched");
+        second.cardDiv.classList.add("matched");
+        matchedCount+=2;
+        flipped=[];
+        matchSound.play();
+
+        if(matchedCount===cards.length){
+          statusText.textContent="🎉 You matched all pairs!";
+          winSound.play();
+          clearInterval(timerInterval);
+        }
+      } else {
+        setTimeout(()=>{
+          first.cardDiv.classList.remove("flipped");
+          second.cardDiv.classList.remove("flipped");
+          flipped=[];
+        },800);
+      }
+    }
+  }
+
+  function updateScoreboard(){
+    scoreboard.textContent=`Moves: ${moves} | Matches: ${matchedCount/2}`;
+  }
+
+  function updateTimer(){
+    timerDisplay.textContent=`Time: ${timer++}s`;
+  }
+</script>
+
+</body>
+</html>
