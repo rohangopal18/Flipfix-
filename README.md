@@ -8,7 +8,7 @@ Test your concentration and recall skills by flipping cards to match fruit pairs
 ## 🎮 Play the Game
 
 Live Demo:  
-https://rohangopal18.github.io/Flipfix-/
+www.flipfix.online
 
 (Replace `yourusername` with your GitHub username)
 
